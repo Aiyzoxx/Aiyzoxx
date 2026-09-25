@@ -1,0 +1,18 @@
+{
+  "username": "AiyzoxX",
+  "rows": [
+    ["host"],
+    ["kv", "Role", "Fullstack Developer & AI Builder"],
+    ["kv", "Focus", "Web Applications, Tools & APIs"],
+    ["gap"],
+    ["sec", "Stack"],
+    ["kv", "Languages", "Python, TypeScript, JavaScript"],
+    ["kv", "Frontend", "React, Next.js, Tailwind CSS"],
+    ["kv", "Backend", "FastAPI, Node.js, Express"],
+    ["kv", "Tools", "Docker, Git, Linux, GitHub Actions"],
+    ["gap"],
+    ["sec", "Highlights"],
+    ["bul", "Open-source contributor & continuous learner"],
+    ["bul", "Building modern, automated developer experiences"]
+  ]
+}
