@@ -49,7 +49,7 @@ if os.path.exists(INFO_JSON):
 if not ROWS:
     ROWS = [
         ("host",),
-        ("kv", "Role", "Developer & Builder"),
+        ("kv", "Role", "Vibe Coder"),
         ("kv", "Focus", "Fullstack · AI · Systems"),
         ("gap",),
         ("sec", "Stack"),
