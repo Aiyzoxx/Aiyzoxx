@@ -17,7 +17,7 @@ OUT = os.path.join(HERE, "..", "info-card.svg")
 INFO_JSON = os.path.join(HERE, "..", "data", "profile_info.json")
 STATIC = bool(os.environ.get("STATIC"))
 
-USERNAME = os.environ.get("GH_PROFILE_USER", "AiyzoxX")
+USERNAME = os.environ.get("GH_PROFILE_USER", "valthvn")
 
 W, H = 490, 385
 PAD = 20

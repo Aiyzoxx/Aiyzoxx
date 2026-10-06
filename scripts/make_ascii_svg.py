@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # the background removed + local contrast applied.
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "source-prepped.png")
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, "..", "ascii-portrait.svg")
-USERNAME = os.environ.get("GH_PROFILE_USER", "AiyzoxX")
+USERNAME = os.environ.get("GH_PROFILE_USER", "valthvn")
 
 COLS = 100
 ROWS = 53
