@@ -1,25 +1,32 @@
-name: Validate desktop profile
+name: Update terminal session
 
 "on":
+  schedule:
+    - cron: '17 6 * * *'
   workflow_dispatch: {}
   push:
     branches: [main]
     paths:
       - 'README.md'
-      - 'assets/desktop/**'
+      - 'assets/session/**'
+      - 'ascii-portrait.svg'
+      - 'scripts/render_session.py'
       - 'scripts/render_desktop.py'
+      - 'scripts/render_observatory.py'
+      - 'scripts/fetch_contributions.py'
+      - 'data/contributions.json'
       - 'tests/**'
       - '.github/workflows/update-profile-art.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: profile-desktop
+  group: profile-session
   cancel-in-progress: false
 
 jobs:
-  desktop:
+  session:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -29,9 +36,21 @@ jobs:
           python-version: '3.11'
       - name: Install dependency for preserved animation tests
         run: python -m pip install -r scripts/requirements-holo.txt
-      - name: Validate desktop and preserved editions
+      - name: Validate session and preserved editions
         run: python -m unittest discover -s tests -v
-      - name: Verify reproducible desktop assets
+      - name: Fetch public contribution calendar
+        run: python scripts/fetch_contributions.py
+      - name: Render current session
+        run: python scripts/render_session.py
+      - name: Validate refreshed session
+        run: python -m unittest discover -s tests -v
+      - name: Commit refreshed activity
         run: |
-          python scripts/render_desktop.py
-          git diff --exit-code -- README.md assets/desktop
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/contributions.json assets/session README.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'chore: refresh terminal session activity [skip ci]'
+          git push
