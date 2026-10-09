@@ -2,6 +2,7 @@
 """An animated monochrome shell session, using existing portrait and calendar data."""
 import json
 import math
+from html import escape
 import xml.etree.ElementTree as ET
 from functools import partial
 from pathlib import Path
@@ -32,7 +33,7 @@ def reveal(body, delay, kind='output'):
 
 
 def shell(body, height, title, desc, animated=True):
-    return svg(960, height, title, desc, (STYLE if animated else '')+R(0,0,960,height,'#0b0b0b')+body)
+    return svg(960, height, title, desc, (STYLE if animated else '')+body)
 
 
 def hero():
@@ -117,7 +118,7 @@ def activity(data):
         if c['open']==c['close']:
             body += f'<path d="M{x-2.7} {top} H{x+2.7}" stroke="{color}"/>'
         else:
-            body += rect(x-2.7,top,5.4,bottom-top,'#eeeeee' if c['close']>c['open'] else '#0b0b0b',color,1)
+            body += rect(x-2.7,top,5.4,bottom-top,'#eeeeee' if c['close']>c['open'] else 'none',color,1)
         if c['count']:
             h = 46*c['count']/peak_volume
             body += R(x-2.7,425-h,5.4,h,color)
@@ -137,12 +138,17 @@ def activity(data):
                  'Filled bodies rise, hollow bodies fall, lines are flat. Volume is each day’s actual count.')
 
 
+def picture(name, alt):
+    return (f'<picture><source media="(prefers-color-scheme: dark)" srcset="./assets/session/{name}.svg">'
+            f'<img src="./assets/session/{name}-light.svg" width="960" alt="{escape(alt,quote=True)}"></picture>')
+
+
 def readme():
-    links = '\n'.join(f'<a href="https://github.com/valthvn/{repo}"><img src="./assets/session/project-{number}.svg" width="960" alt="Open {label} repository"></a><br>'
+    links = '\n'.join(f'<a href="https://github.com/valthvn/{repo}">'+picture('project-'+number,'Open '+label+' repository')+'</a><br>'
                       for label,repo,number,_ in PROJECTS)
     return '''<!-- VALTHVN / SESSION 005 -->
 
-<img src="./assets/session/boot.svg" width="960" alt="VALTHVN. Animated monochrome terminal and ASCII portrait. Valentin / valthvn — vibe coder, building web applications, tools and APIs. Build. Learn. Iterate.">
+'''+picture('boot','VALTHVN. Animated monochrome terminal and ASCII portrait. Valentin / valthvn — vibe coder, building web applications, tools and APIs. Build. Learn. Iterate.')+'''
 
 '''+links+'''
 
@@ -162,7 +168,7 @@ def readme():
 
 <br>
 
-<img src="./assets/session/activity.svg" width="960" alt="Monochrome GitHub contribution candles: 90 daily candles based on rolling seven-day totals, actual daily volumes, and totals over 365 and 90 observed days. Filled candles rise; hollow candles fall.">
+'''+picture('activity','Monochrome GitHub contribution candles: 90 daily candles based on rolling seven-day totals, actual daily volumes, and totals over 365 and 90 observed days. Filled candles rise; hollow candles fall.')+'''
 
 <details>
 <summary><code>~ $ help</code></summary>
@@ -178,10 +184,14 @@ def readme():
 def main():
     data = json.loads((ROOT/'data/contributions.json').read_text(encoding='utf-8'))
     OUT.mkdir(parents=True,exist_ok=True)
-    (OUT/'boot.svg').write_text(hero(),encoding='utf-8')
-    (OUT/'activity.svg').write_text(activity(data),encoding='utf-8')
-    for project_data in PROJECTS:
-        (OUT/f'project-{project_data[2]}.svg').write_text(project(*project_data),encoding='utf-8')
+    assets = {'boot':hero(),'activity':activity(data)}
+    assets.update((f'project-{p[2]}',project(*p)) for p in PROJECTS)
+    for name,body in assets.items():
+        (OUT/f'{name}.svg').write_text(body,encoding='utf-8')
+        for dark,light in {'#f0f0f0':'#1f2328','#eeeeee':'#1f2328','#b8b8b8':'#59636e',
+                           '#969696':'#59636e','#393939':'#d1d9e0','#252525':'#d8dee4','#0b0b0b':'#ffffff'}.items():
+            body = body.replace(dark,light)
+        (OUT/f'{name}-light.svg').write_text(body,encoding='utf-8')
     (ROOT/'README.md').write_text(readme(),encoding='utf-8')
     print('Rendered SESSION 005: animated boot, repository commands and real activity.')
 

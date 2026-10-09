@@ -82,10 +82,26 @@ class SessionTests(unittest.TestCase):
     @unittest.skipUnless('SESSION 005' in (ROOT/'README.md').read_text(encoding='utf-8'),'session is not active')
     def test_all_readme_assets_and_clickable_commands(self):
         body = (ROOT/'README.md').read_text(encoding='utf-8')
-        for path in re.findall(r'src="\./([^"]+)"',body):
+        for path in re.findall(r'(?:src|srcset)="\./([^"]+)"',body):
             self.assertTrue((ROOT/path).is_file(),path)
         self.assertEqual(body.count('<details>'),2)
         for removed in ('`history`','`ls -a`','`man session`'):
             self.assertNotIn(removed,body)
         for _,repo,_,_ in session.PROJECTS:
             self.assertIn('href="https://github.com/valthvn/'+repo+'"',body)
+
+    def test_panels_have_transparent_background_and_light_theme_variants(self):
+        ns = {'s':'http://www.w3.org/2000/svg'}
+        for name in ('boot','activity','project-01','project-02','project-03'):
+            for suffix in ('','-light'):
+                body = (ROOT/f'assets/session/{name}{suffix}.svg').read_text(encoding='utf-8')
+                root = ET.fromstring(body)
+                for rect in root.findall('s:rect',ns):
+                    self.assertFalse(rect.get('x')=='0' and rect.get('y')=='0'
+                                     and rect.get('width')==root.get('width') and rect.get('height')==root.get('height'))
+                if suffix:
+                    self.assertIn('#1f2328',body)
+                    self.assertNotIn('#f0f0f0',body)
+        body = session.readme()
+        self.assertEqual(body.count('prefers-color-scheme: dark'),5)
+        self.assertEqual(body.count('<picture>'),5)

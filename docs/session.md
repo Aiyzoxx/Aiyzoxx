@@ -8,6 +8,8 @@ The SVG uses a one-shot typing sequence. Following [Avi Vashishta's portrait ani
 
 The activity panel follows the trading layout of [github-candles](https://github.com/starlash7/github-candles), in monochrome: 90 daily candles, an OHLC readout, right axis, last-value marker and daily volume bars. Each candle opens at the previous trailing seven-day contribution total and closes at the current trailing seven-day total. High and low equal the larger and smaller endpoints; no intraday activity is invented. Rising candles are filled white, falling candles are hollow and flat candles are horizontal lines. Volume is the actual daily count; zero days have no volume bar. The 365-day and 90-day totals are independently summed over the validated calendar, with the snapshot date visible. These are GitHub contributions, not exclusively commits or financial prices.
 
+Every panel has a transparent background, including hollow candles. The README's picture elements select light lettering in dark mode and dark lettering in light mode. Both variants preserve the same data, coordinates and motion; no external theme service is used.
+
 ```sh
 python scripts/render_session.py
 python -m unittest discover -s tests -q
