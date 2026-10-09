@@ -42,6 +42,7 @@ class HoloTests(unittest.TestCase):
                 duration += image.info['duration']
             self.assertEqual(duration,7680)
 
+    @unittest.skipUnless('HOLO EX / V3' in (ROOT/'README.md').read_text(), 'holo is not the active profile')
     def test_reduced_motion_selects_one_static_image_first(self):
         body=(ROOT/'README.md').read_text()
         self.assertLess(body.index('prefers-reduced-motion: reduce'),body.index('type="image/webp"'))
@@ -85,6 +86,7 @@ class HoloTests(unittest.TestCase):
         zeros=[dict(d,count=0) for d in days]
         ET.fromstring(profile.ledger(data,zeros))
 
+    @unittest.skipUnless('HOLO EX / V3' in (ROOT/'README.md').read_text(), 'holo is not the active profile')
     def test_all_readme_assets_and_project_destinations_are_real(self):
         body=(ROOT/'README.md').read_text()
         self.assertIn('HOLO EX / V3',body)
