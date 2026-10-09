@@ -1,0 +1,16 @@
+{
+  "version": "v2",
+  "title": "Édition",
+  "username": "valthvn",
+  "headline": "Ideas, made useful.",
+  "intro": [
+    "Applications, automations and small experiments.",
+    "Built around the details of everyday use."
+  ],
+  "stack": ["C#", "Python", "TypeScript", "JavaScript"],
+  "projects": [
+    {"repo": "Mint", "name": "Mint", "kind": "Desktop utility", "source": "mint-dashboard.png"},
+    {"repo": "ValthvnQuota", "name": "ValthvnQuota", "kind": "Developer tool", "source": "quota-flyout.png"},
+    {"repo": "antigravity-discord-rpc", "name": "Antigravity RPC", "kind": "Workflow automation", "source": null}
+  ]
+}
