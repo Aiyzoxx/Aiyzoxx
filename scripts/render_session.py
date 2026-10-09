@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT/'assets/session'
 PROJECTS = [('Mint', 'Mint', '01'), ('ValthvnQuota', 'ValthvnQuota', '02'),
-            ('Antigravity RPC', 'antigravity-discord-rpc', '03')]
+            ('SkyHands', 'SkyHands', '03')]
 
 
 def rect(x, y, w, h, fill, stroke='#f0f0f0', sw=2):

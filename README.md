@@ -4,7 +4,7 @@
 
 <a href="https://github.com/valthvn/Mint"><picture><source media="(prefers-color-scheme: dark)" srcset="./assets/session/project-01.svg"><img src="./assets/session/project-01-light.svg" width="960" alt="Open Mint repository"></picture></a><br>
 <a href="https://github.com/valthvn/ValthvnQuota"><picture><source media="(prefers-color-scheme: dark)" srcset="./assets/session/project-02.svg"><img src="./assets/session/project-02-light.svg" width="960" alt="Open ValthvnQuota repository"></picture></a><br>
-<a href="https://github.com/valthvn/antigravity-discord-rpc"><picture><source media="(prefers-color-scheme: dark)" srcset="./assets/session/project-03.svg"><img src="./assets/session/project-03-light.svg" width="960" alt="Open Antigravity RPC repository"></picture></a><br>
+<a href="https://github.com/valthvn/SkyHands"><picture><source media="(prefers-color-scheme: dark)" srcset="./assets/session/project-03.svg"><img src="./assets/session/project-03-light.svg" width="960" alt="Open SkyHands repository"></picture></a><br>
 
 <details>
 <summary><code>~ $ cat stack.json</code></summary>
