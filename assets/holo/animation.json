@@ -1,0 +1,25 @@
+{
+  "frames": 96,
+  "duration_ms": 80,
+  "loop_ms": 7680,
+  "size": [
+    720,
+    740
+  ],
+  "projection": "3D yaw/pitch/roll with inverse homography",
+  "effects": [
+    "angle-dependent iridescence",
+    "specular light band",
+    "micro-glints",
+    "colored edge halo"
+  ],
+  "live_data_in_animation": false,
+  "gif_fallback": {
+    "frames": 48,
+    "duration_ms": 160,
+    "size": [
+      540,
+      555
+    ]
+  }
+}

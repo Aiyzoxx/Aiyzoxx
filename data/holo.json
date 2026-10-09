@@ -1,0 +1,11 @@
+{
+  "version": "v3",
+  "username": "valthvn",
+  "title": "Holo EX",
+  "format": "Full art / holographic",
+  "projects": [
+    {"repo":"Mint","label":"Mint"},
+    {"repo":"ValthvnQuota","label":"ValthvnQuota"},
+    {"repo":"antigravity-discord-rpc","label":"Antigravity RPC"}
+  ]
+}
