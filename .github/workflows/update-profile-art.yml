@@ -11,8 +11,6 @@ name: Update terminal session
       - 'assets/session/**'
       - 'ascii-portrait.svg'
       - 'scripts/render_session.py'
-      - 'scripts/render_desktop.py'
-      - 'scripts/render_observatory.py'
       - 'scripts/fetch_contributions.py'
       - 'data/contributions.json'
       - 'tests/**'
@@ -34,9 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependency for preserved animation tests
-        run: python -m pip install -r scripts/requirements-holo.txt
-      - name: Validate session and preserved editions
+      - name: Validate current profile
         run: python -m unittest discover -s tests -v
       - name: Fetch public contribution calendar
         run: python scripts/fetch_contributions.py

@@ -1,16 +1,58 @@
 #!/usr/bin/env python3
 """An animated monochrome shell session, using existing portrait and calendar data."""
+import datetime as dt
+import html
 import json
 import math
 from html import escape
 import xml.etree.ElementTree as ET
 from functools import partial
 from pathlib import Path
-from render_desktop import text, rect, svg, PROJECTS
-from render_observatory import normalize_days
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT/'assets/session'
+PROJECTS = [('Mint', 'Mint', '01'), ('ValthvnQuota', 'ValthvnQuota', '02'),
+            ('Antigravity RPC', 'antigravity-discord-rpc', '03')]
+
+
+def rect(x, y, w, h, fill, stroke='#f0f0f0', sw=2):
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>'
+
+
+def text(x, y, value, size=14, fill='#f0f0f0', weight=400, family='monospace'):
+    return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" '
+            f'font-weight="{weight}" fill="{fill}">{html.escape(str(value))}</text>')
+
+
+def svg(w, h, title, description, body):
+    result = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
+              f'role="img" aria-labelledby="title desc"><title id="title">{html.escape(title)}</title>'
+              f'<desc id="desc">{html.escape(description)}</desc>{body}</svg>\n')
+    ET.fromstring(result)
+    return result
+
+
+def normalize_days(data):
+    """A 365-day window ending at the last actual date, not the machine clock."""
+    raw = data['days']
+    if not raw:
+        raise ValueError('Contribution data must contain days')
+    lookup = {}
+    for row in raw:
+        date = dt.date.fromisoformat(row['date'])
+        count = row['count']
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise ValueError('Contribution counts must be nonnegative integers')
+        if date in lookup:
+            raise ValueError('Duplicate contribution dates')
+        lookup[date] = count
+    end = max(lookup)
+    start = end - dt.timedelta(days=364)
+    # Missing dates within the observed window are errors, never fake zeroes.
+    return [{'date': start + dt.timedelta(days=i), 'count': lookup[start + dt.timedelta(days=i)]}
+            for i in range(365)]
+
+
 T = partial(text, fill='#f0f0f0')
 R = partial(rect, stroke='none', sw=0)
 STYLE = '''<style>
@@ -71,7 +113,7 @@ def hero():
                  'web applications, tools and APIs. Build, learn, iterate. Project links and expandable stack follow.')
 
 
-def project(label,repo,number,color):
+def project(label,repo,number):
     b = T(26,32,number,12,fill='#969696')+T(74,33,'cd ~/projects/'+repo,17)
     b += T(74,62,'OPEN REPOSITORY',10,fill='#969696')+T(895,48,'↗',26)
     b += R(26,81,908,1,'#393939')
@@ -145,7 +187,7 @@ def picture(name, alt):
 
 def readme():
     links = '\n'.join(f'<a href="https://github.com/valthvn/{repo}">'+picture('project-'+number,'Open '+label+' repository')+'</a><br>'
-                      for label,repo,number,_ in PROJECTS)
+                      for label,repo,number in PROJECTS)
     return '''<!-- VALTHVN / SESSION 005 -->
 
 '''+picture('boot','VALTHVN. Animated monochrome terminal and ASCII portrait. Valentin / valthvn — vibe coder, building web applications, tools and APIs. Build. Learn. Iterate.')+'''

@@ -79,7 +79,6 @@ class SessionTests(unittest.TestCase):
             self.assertNotIn('<foreignObject',body)
             self.assertNotIn('href=',body)
 
-    @unittest.skipUnless('SESSION 005' in (ROOT/'README.md').read_text(encoding='utf-8'),'session is not active')
     def test_all_readme_assets_and_clickable_commands(self):
         body = (ROOT/'README.md').read_text(encoding='utf-8')
         for path in re.findall(r'(?:src|srcset)="\./([^"]+)"',body):
@@ -87,7 +86,7 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(body.count('<details>'),2)
         for removed in ('`history`','`ls -a`','`man session`'):
             self.assertNotIn(removed,body)
-        for _,repo,_,_ in session.PROJECTS:
+        for _,repo,_ in session.PROJECTS:
             self.assertIn('href="https://github.com/valthvn/'+repo+'"',body)
 
     def test_panels_have_transparent_background_and_light_theme_variants(self):
