@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """An animated monochrome shell session, using existing portrait and calendar data."""
 import json
+import math
 import xml.etree.ElementTree as ET
 from functools import partial
 from pathlib import Path
@@ -15,10 +16,14 @@ STYLE = '''<style>
 @keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 @keyframes enter{from{opacity:0}to{opacity:1}}
 @keyframes cursor{50%{opacity:0}}
+@keyframes portrait-print{from{width:0}to{width:372px}}
+@keyframes portrait-scan{from{transform:translateX(0);opacity:1}to{transform:translateX(372px);opacity:1}}
 .type{animation:type 1.1s steps(34,end) both}
 .output{animation:enter .5s both}
 .cursor{animation:cursor 1s step-end infinite}
-@media(prefers-reduced-motion:reduce){.type,.output,.cursor{animation:none}}
+.portrait-clip{animation:portrait-print var(--row-duration) steps(100,end) var(--row-delay) both}
+.portrait-cursor{opacity:0;animation:portrait-scan var(--row-duration) linear var(--row-delay)}
+@media(prefers-reduced-motion:reduce){.type,.output,.cursor,.portrait-clip,.portrait-cursor{animation:none}.portrait-clip{width:372px}.portrait-cursor{display:none}}
 </style>'''
 
 
@@ -45,15 +50,20 @@ def hero():
     portrait = ET.parse(ROOT/'ascii-portrait.svg').getroot().findall('.//{http://www.w3.org/2000/svg}text')[1:-1]
     art = ''
     for i,node in enumerate(portrait):
+        timing = f'--row-duration:{5.8/len(portrait):.6f}s;--row-delay:{2.6+i*5.8/len(portrait):.6f}s'
+        baseline = 8+i*6.2
+        art += (f'<defs><clipPath id="portrait-row-{i}"><rect class="portrait-clip" '
+                f'x="0" y="{baseline-5.2}" width="372" height="6.2" style="{timing}"/></clipPath></defs>')
         characters = [(column,char) for column,char in enumerate(node.text or '') if char != ' ']
         if characters:
             # Explicit glyph positions survive SVG renderers collapsing leading spaces.
             positions = ' '.join(f'{column*3.72:.2f}' for column,_ in characters)
-            art += T(positions,8+i*6.2,''.join(char for _,char in characters),6.2)
-    b += reveal('<g transform="translate(558 212)" xml:space="preserve">'+art+'</g>',2.6)
-    b += reveal(T(34,525,'~ $ ./explore',16),4.8,'type')
-    b += reveal(T(34,556,'projects/      stack.json      activity.log',13,fill='#b8b8b8'),6)
-    b += reveal(T(34,596,'~ $',16)+'<rect class="cursor" x="77" y="582" width="10" height="18" fill="#f0f0f0"/>',6.4)
+            art += f'<g clip-path="url(#portrait-row-{i})">'+T(positions,baseline,''.join(char for _,char in characters),6.2)+'</g>'
+        art += f'<rect class="portrait-cursor" x="0" y="{baseline-5.2}" width="3.72" height="6.2" fill="#f0f0f0" style="{timing}"/>'
+    b += '<g transform="translate(558 212)" xml:space="preserve">'+art+'</g>'
+    b += reveal(T(34,525,'~ $ ./explore',16),8.6,'type')
+    b += reveal(T(34,556,'projects/      stack.json      activity.log',13,fill='#b8b8b8'),9.8)
+    b += reveal(T(34,596,'~ $',16)+'<rect class="cursor" x="77" y="582" width="10" height="18" fill="#f0f0f0"/>',10.2)
     b += R(32,622,896,1,'#393939')+T(34,650,'END OF BOOT / YOUR NEXT COMMAND IS BELOW ↓',11,fill='#969696')
     return shell(b,676,'VALTHVN — a living terminal session',
                  'Animated connection and whoami sequence with Valentin’s ASCII portrait. Vibe coder; '
@@ -67,28 +77,64 @@ def project(label,repo,number,color):
     return shell(b,90,'Open '+label,'Shell-style link to the '+label+' repository.',False)
 
 
+def candles(days):
+    result = []
+    for i in range(len(days)-90,len(days)):
+        opening = sum(d['count'] for d in days[i-7:i])
+        closing = sum(d['count'] for d in days[i-6:i+1])
+        result.append(dict(date=days[i]['date'],count=days[i]['count'],open=opening,close=closing,
+                           high=max(opening,closing),low=min(opening,closing)))
+    return result
+
+
 def activity(data):
     days = normalize_days(data)
-    recent = days[-90:]
+    series = candles(days)
+    last = series[-1]
     total = sum(d['count'] for d in days)
-    b = T(32,39,'~ $ git activity --last 90d --draw',17)
-    b += T(32,75,'ONE COLUMN = ONE OBSERVED DAY / HEIGHT = CONTRIBUTIONS',10,fill='#969696')
-    peak = max(1,max(d['count'] for d in recent))
-    for i,d in enumerate(recent):
-        h = 116*d['count']/peak
-        bar = (f'<g data-date="{d["date"]}" data-count="{d["count"]}">'
-               f'<title>{d["date"]}: {d["count"]} contributions</title>'
-               +R(33+i*10,218-max(2,h),5,max(2,h),'#eeeeee' if d['count'] else '#353535')+'</g>')
-        b += reveal(bar,i*.025)
-    b += T(32,246,str(recent[0]['date']),11,fill='#969696')+T(821,246,str(recent[-1]['date']),11,fill='#969696')
-    b += R(32,270,896,1,'#393939')
-    b += T(32,307,total,30,weight=700)+T(145,305,'CONTRIBUTIONS / 365 DAYS',11)
-    b += T(505,307,sum(d['count'] for d in recent),30,weight=700)+T(620,305,'CONTRIBUTIONS / 90 DAYS',11)
-    b += T(32,341,'PUBLIC CALENDAR SNAPSHOT / '+data['generated_at'],10,fill='#969696')
-    return shell(b,366,'Real GitHub contributions — 90-day activity trace',
-                 f'{total} contributions in 365 observed days; {sum(d["count"] for d in recent)} in the last 90. '
-                 f'One column per day from {recent[0]["date"]} to {recent[-1]["date"]}. '
-                 'Counts are contributions, not exclusively commits. Zero days use a dim baseline.')
+    recent_total = sum(c['count'] for c in series)
+    step = max(1,math.ceil(max(c['high'] for c in series)/4))
+    ceiling = step*4
+    peak_volume = max(1,max(c['count'] for c in series))
+    def y(value):
+        return 334-184*value/ceiling
+    b = T(32,39,'~ $ git activity --candles',17)
+    b += T(32,70,'1D / ROLLING 7D TOTAL / LAST 90 DAYS',11,fill='#969696')
+    b += T(32,116,last['close'],34,weight=700)+T(125,113,'CONTRIBUTIONS / LAST 7D',11)
+    b += T(550,87,f'O {last["open"]}   H {last["high"]}   L {last["low"]}   C {last["close"]}',12)
+    b += T(550,113,'FILLED: UP / HOLLOW: DOWN / LINE: FLAT',10,fill='#969696')
+    for value in range(0,ceiling+1,step):
+        b += R(32,y(value),830,1,'#252525')+T(884,y(value)+4,value,10,fill='#969696')
+    b += R(872,141,1,290,'#393939')
+    b += f'<path d="M32 {y(last["close"])} H872" fill="none" stroke="#b8b8b8" stroke-dasharray="3 5"/>'
+    b += R(879,y(last['close'])-10,49,20,'#f0f0f0')+T(886,y(last['close'])+4,last['close'],11,fill='#0b0b0b')
+    b += T(32,366,'VOL / DAILY CONTRIBUTIONS',10,fill='#969696')
+    for i,c in enumerate(series):
+        x = 36+i*9.2
+        color = '#eeeeee' if c['close']>=c['open'] else '#969696'
+        top,bottom = y(c['high']),y(c['low'])
+        body = f'<path d="M{x} {top} V{bottom}" stroke="{color}"/>'
+        if c['open']==c['close']:
+            body += f'<path d="M{x-2.7} {top} H{x+2.7}" stroke="{color}"/>'
+        else:
+            body += rect(x-2.7,top,5.4,bottom-top,'#eeeeee' if c['close']>c['open'] else '#0b0b0b',color,1)
+        if c['count']:
+            h = 46*c['count']/peak_volume
+            body += R(x-2.7,425-h,5.4,h,color)
+        attributes = ' '.join(f'data-{key}="{c[key]}"' for key in ('date','count','open','high','low','close'))
+        body = f'<g {attributes}><title>{c["date"]}: {c["count"]} contributions; rolling 7D O {c["open"]}, H {c["high"]}, L {c["low"]}, C {c["close"]}</title>'+body+'</g>'
+        b += reveal(body,i*.025)
+    for i in (0,30,60,89):
+        b += T(32+i*9.2-(45 if i==89 else 0),450,str(series[i]['date']),10,fill='#969696')
+    b += R(32,472,896,1,'#393939')
+    b += T(32,510,total,30,weight=700)+T(145,508,'CONTRIBUTIONS / 365 DAYS',11)
+    b += T(505,510,recent_total,30,weight=700)+T(620,508,'CONTRIBUTIONS / 90 DAYS',11)
+    b += T(32,546,'PUBLIC CALENDAR SNAPSHOT / '+data['generated_at'],10,fill='#969696')
+    return shell(b,570,'Real GitHub activity — monochrome contribution candles',
+                 f'{total} contributions in 365 observed days; {recent_total} in the last 90. '
+                 'Daily candles: open is the previous trailing seven-day total; close is the current total. '
+                 'High and low are the larger and smaller endpoints, without invented intraday movement. '
+                 'Filled bodies rise, hollow bodies fall, lines are flat. Volume is each day’s actual count.')
 
 
 def readme():
@@ -116,17 +162,14 @@ def readme():
 
 <br>
 
-<img src="./assets/session/activity.svg" width="960" alt="Real public GitHub activity: 90 daily columns, totals over 365 and 90 observed days, and dated snapshot. Contributions include more than commits.">
+<img src="./assets/session/activity.svg" width="960" alt="Monochrome GitHub contribution candles: 90 daily candles based on rolling seven-day totals, actual daily volumes, and totals over 365 and 90 observed days. Filled candles rise; hollow candles fall.">
 
 <details>
 <summary><code>~ $ help</code></summary>
 
 `projects/` — click a repository row above.  
 `stack.json` — expand the toolbox.  
-`activity.log` — real public contribution counts, refreshed daily.  
-`history` — [saved editions v1 / v2 / v3 / v4 / v5](./docs/versions.md).  
-`ls -a` — [all repositories](https://github.com/valthvn?tab=repositories).  
-`man session` — [how this profile works](./docs/session.md).
+`activity.log` — real public contribution candles, refreshed daily.
 
 </details>
 '''

@@ -22,16 +22,13 @@
 
 <br>
 
-<img src="./assets/session/activity.svg" width="960" alt="Real public GitHub activity: 90 daily columns, totals over 365 and 90 observed days, and dated snapshot. Contributions include more than commits.">
+<img src="./assets/session/activity.svg" width="960" alt="Monochrome GitHub contribution candles: 90 daily candles based on rolling seven-day totals, actual daily volumes, and totals over 365 and 90 observed days. Filled candles rise; hollow candles fall.">
 
 <details>
 <summary><code>~ $ help</code></summary>
 
 `projects/` — click a repository row above.  
 `stack.json` — expand the toolbox.  
-`activity.log` — real public contribution counts, refreshed daily.  
-`history` — [saved editions v1 / v2 / v3 / v4 / v5](./docs/versions.md).  
-`ls -a` — [all repositories](https://github.com/valthvn?tab=repositories).  
-`man session` — [how this profile works](./docs/session.md).
+`activity.log` — real public contribution candles, refreshed daily.
 
 </details>

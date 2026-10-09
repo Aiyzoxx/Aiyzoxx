@@ -17,7 +17,7 @@ class SessionTests(unittest.TestCase):
         group = root.find('.//s:g[@transform="translate(558 212)"]',ns)
         rows = ET.parse(ROOT/'ascii-portrait.svg').getroot().findall('.//s:text',ns)[1:-1]
         visible = [(i,n.text) for i,n in enumerate(rows) if (n.text or '').strip()]
-        output = group.findall('s:text',ns)
+        output = group.findall('.//s:text',ns)
         self.assertEqual(len(output),len(visible))
         for node,(row,source) in zip(output,visible):
             characters = [(column,char) for column,char in enumerate(source) if char != ' ']
@@ -25,6 +25,22 @@ class SessionTests(unittest.TestCase):
             self.assertEqual([float(x) for x in node.attrib['x'].split()],
                              [round(column*3.72,2) for column,_ in characters])
             self.assertAlmostEqual(float(node.attrib['y']),8+row*6.2)
+
+    def test_portrait_prints_rows_in_sequence_with_a_moving_cursor(self):
+        ns = {'s':'http://www.w3.org/2000/svg'}
+        root = ET.fromstring(session.hero())
+        clips = root.findall('.//s:rect[@class="portrait-clip"]',ns)
+        cursors = root.findall('.//s:rect[@class="portrait-cursor"]',ns)
+        self.assertEqual(len(clips),53)
+        self.assertEqual(len(cursors),53)
+        timing = [dict(p.split(':',1) for p in node.attrib['style'].split(';')) for node in clips]
+        starts = [float(t['--row-delay'][:-1]) for t in timing]
+        duration = float(timing[0]['--row-duration'][:-1])
+        self.assertAlmostEqual(starts[0],2.6)
+        self.assertAlmostEqual(starts[-1]+duration,8.4,places=5)
+        for left,right in zip(starts,starts[1:]):
+            self.assertAlmostEqual(right-left,duration,places=5)
+        self.assertIn('.portrait-cursor{display:none}',session.hero())
 
     def test_activity_preserves_each_observed_count_including_zero(self):
         data = json.loads((ROOT/'data/contributions.json').read_text())
@@ -37,6 +53,21 @@ class SessionTests(unittest.TestCase):
             expected = session.normalize_days(data)[-90:]
             self.assertEqual([(e.attrib['data-date'],int(e.attrib['data-count'])) for e in bars],
                              [(str(d['date']),d['count']) for d in expected])
+
+    def test_candles_use_previous_and_current_seven_day_totals(self):
+        data = json.loads((ROOT/'data/contributions.json').read_text())
+        days = session.normalize_days(data)
+        for i,day in enumerate(days):
+            day['count'] = i%11
+        for i,candle in enumerate(session.candles(days),start=275):
+            opening = sum(day['count'] for day in days[i-7:i])
+            closing = sum(day['count'] for day in days[i-6:i+1])
+            self.assertEqual((candle['open'],candle['close']),(opening,closing))
+            self.assertEqual((candle['low'],candle['high']),(min(opening,closing),max(opening,closing)))
+        for day in days:
+            day['count'] = 0
+        for candle in session.candles(days):
+            self.assertEqual((candle['open'],candle['close'],candle['count']),(0,0,0))
 
     def test_no_scripts_external_assets_and_reduced_motion(self):
         for name in ('boot.svg','activity.svg'):
@@ -54,5 +85,7 @@ class SessionTests(unittest.TestCase):
         for path in re.findall(r'src="\./([^"]+)"',body):
             self.assertTrue((ROOT/path).is_file(),path)
         self.assertEqual(body.count('<details>'),2)
+        for removed in ('`history`','`ls -a`','`man session`'):
+            self.assertNotIn(removed,body)
         for _,repo,_,_ in session.PROJECTS:
             self.assertIn('href="https://github.com/valthvn/'+repo+'"',body)
