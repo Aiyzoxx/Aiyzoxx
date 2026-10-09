@@ -43,7 +43,13 @@ def hero():
     for i,(key,value) in enumerate(rows):
         b += reveal(T(34,351+i*28,key,12,fill='#969696')+T(135,351+i*28,value,12),3+i*.2)
     portrait = ET.parse(ROOT/'ascii-portrait.svg').getroot().findall('.//{http://www.w3.org/2000/svg}text')[1:-1]
-    art = ''.join(T(0,8+i*6.2,node.text or '',6.2) for i,node in enumerate(portrait))
+    art = ''
+    for i,node in enumerate(portrait):
+        characters = [(column,char) for column,char in enumerate(node.text or '') if char != ' ']
+        if characters:
+            # Explicit glyph positions survive SVG renderers collapsing leading spaces.
+            positions = ' '.join(f'{column*3.72:.2f}' for column,_ in characters)
+            art += T(positions,8+i*6.2,''.join(char for _,char in characters),6.2)
     b += reveal('<g transform="translate(558 212)" xml:space="preserve">'+art+'</g>',2.6)
     b += reveal(T(34,525,'~ $ ./explore',16),4.8,'type')
     b += reveal(T(34,556,'projects/      stack.json      activity.log',13,fill='#b8b8b8'),6)

@@ -11,6 +11,21 @@ import render_session as session
 
 
 class SessionTests(unittest.TestCase):
+    def test_portrait_alignment_does_not_depend_on_whitespace(self):
+        ns = {'s':'http://www.w3.org/2000/svg'}
+        root = ET.fromstring(session.hero())
+        group = root.find('.//s:g[@transform="translate(558 212)"]',ns)
+        rows = ET.parse(ROOT/'ascii-portrait.svg').getroot().findall('.//s:text',ns)[1:-1]
+        visible = [(i,n.text) for i,n in enumerate(rows) if (n.text or '').strip()]
+        output = group.findall('s:text',ns)
+        self.assertEqual(len(output),len(visible))
+        for node,(row,source) in zip(output,visible):
+            characters = [(column,char) for column,char in enumerate(source) if char != ' ']
+            self.assertEqual(node.text,''.join(char for _,char in characters))
+            self.assertEqual([float(x) for x in node.attrib['x'].split()],
+                             [round(column*3.72,2) for column,_ in characters])
+            self.assertAlmostEqual(float(node.attrib['y']),8+row*6.2)
+
     def test_activity_preserves_each_observed_count_including_zero(self):
         data = json.loads((ROOT/'data/contributions.json').read_text())
         for zeros in (False,True):
