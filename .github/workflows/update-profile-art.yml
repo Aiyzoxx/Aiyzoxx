@@ -1,39 +1,51 @@
-name: Update profile art
-
-# Refreshes the contribution graph SVG daily from real data.
-# Runs daily, plus whenever you push to main, plus on-demand.
+name: Update profile observatory
 
 "on":
   schedule:
-    - cron: "17 6 * * *"   # ~06:17 UTC every day
+    - cron: '17 6 * * *'
   workflow_dispatch: {}
   push:
     branches: [main]
+    paths:
+      - 'README.md'
+      - 'assets/**'
+      - 'scripts/fetch_contributions.py'
+      - 'scripts/render_observatory.py'
+      - 'data/observatory.json'
+      - 'tests/**'
+      - '.github/workflows/update-profile-art.yml'
 
 permissions:
   contents: write
 
+concurrency:
+  group: profile-observatory
+  cancel-in-progress: false
+
 jobs:
-  heatmap:
+  observatory:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: pip install -r scripts/requirements.txt
-
-      - name: Scrape real contribution data (no auth needed)
+          python-version: '3.11'
+      - name: Verify data parsing and SVG integrity
+        run: python -m unittest discover -s tests -v
+      - name: Fetch real public contribution data
         run: python scripts/fetch_contributions.py
-
-      - name: Render animated contribution graph SVG
-        run: python scripts/render_heatmap_svg.py
-
-      - name: Commit updated art
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: refresh contribution graph [skip ci]"
-          file_pattern: "data/contributions.json contrib-heatmap.svg"
+      - name: Render both profile themes
+        run: python scripts/render_observatory.py
+      - name: Validate generated panels and links
+        run: python -m unittest discover -s tests -v
+      - name: Commit updated profile
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/contributions.json assets README.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'chore: refresh profile observatory [skip ci]'
+          git push
